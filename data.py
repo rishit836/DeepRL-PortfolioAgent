@@ -47,26 +47,28 @@ def data_gen(ticker):
         df.to_csv(ticker+"_data.csv",index=False)
     else:
         df = pd.read_csv(ticker+"_data.csv")
-        df['SMA_14'] = calculate_SMA(df,14)
-        df['EMA_14'] = calculate_ema(df,14)
-        df['RSI_14'] = calculate_rsi(df,14)
-        df['MACD'],df['MACD_Signal'],df['MACD_Hist']=calculate_MACD(df)
 
-        '''
-        to let model learn the pattern below :-
-        MACD Crosses Above Signal	Bullish Signal (Buy)
-        MACD Crosses Below Signal	Bearish Signal (Sell)
-
-        when MACD > 0 → price bullish (short-term > long-term)
-        when MACD < 0 → price bearish
-        '''
-
-
-
-        df['MACD_Bullish_Crossover'] = ((df['MACD'] > df['MACD_Signal']) & (df['MACD'].shift(1) <= df['MACD_Signal'].shift(1))).astype(int)
-        df['MACD_Bearish_Crossover'] = ((df['MACD'] < df['MACD_Signal']) & (df['MACD'].shift(1) >= df['MACD_Signal'].shift(1))).astype(int)
-        print(df.tail())
         
+    df['SMA_14'] = calculate_SMA(df,14)
+    df['EMA_14'] = calculate_ema(df,14)
+    df['RSI_14'] = calculate_rsi(df,14)
+    df['MACD'],df['MACD_Signal'],df['MACD_Hist']=calculate_MACD(df)
+
+    '''
+    to let model learn the pattern below :-
+    MACD Crosses Above Signal	Bullish Signal (Buy)
+    MACD Crosses Below Signal	Bearish Signal (Sell)
+
+    when MACD > 0 → price bullish (short-term > long-term)
+    when MACD < 0 → price bearish
+    '''
+
+
+
+    df['MACD_Bullish_Crossover'] = ((df['MACD'] > df['MACD_Signal']) & (df['MACD'].shift(1) <= df['MACD_Signal'].shift(1))).astype(int)
+    df['MACD_Bearish_Crossover'] = ((df['MACD'] < df['MACD_Signal']) & (df['MACD'].shift(1) >= df['MACD_Signal'].shift(1))).astype(int)
+    print(df.tail())
+    
         
 
 
