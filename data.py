@@ -23,6 +23,18 @@ def calculate_rsi(df: pd.DataFrame, window: int = 14) -> pd.Series:
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
+def calculate_MACD(data:pd.DataFrame):
+    ema_12 = calculate_ema(data,window=12)
+    ema_26 = calculate_ema(data,window=26)
+    macd_line = ema_12 - ema_26
+    signal_line = macd_line.ewm(span=9,adjust=False).mean()
+    histogram = macd_line - signal_line
+    
+
+    return macd_line,signal_line,histogram
+
+
+
 def data_gen(ticker):
     if not os.path.exists(ticker+"_data.csv"):
         t = yf.Ticker(ticker)
@@ -38,7 +50,23 @@ def data_gen(ticker):
         df['SMA_14'] = calculate_SMA(df,14)
         df['EMA_14'] = calculate_ema(df,14)
         df['RSI_14'] = calculate_rsi(df,14)
-        print(df.head(30))
+        df['MACD'],df['MACD_Signal'],df['MACD_Hist']=calculate_MACD(df)
+
+        '''
+        to let model learn the pattern below :-
+        MACD Crosses Above Signal	Bullish Signal (Buy)
+        MACD Crosses Below Signal	Bearish Signal (Sell)
+
+        when MACD > 0 → price bullish (short-term > long-term)
+        when MACD < 0 → price bearish
+        '''
+
+
+
+        df['MACD_Bullish_Crossover'] = ((df['MACD'] > df['MACD_Signal']) & (df['MACD'].shift(1) <= df['MACD_Signal'].shift(1))).astype(int)
+        df['MACD_Bearish_Crossover'] = ((df['MACD'] < df['MACD_Signal']) & (df['MACD'].shift(1) >= df['MACD_Signal'].shift(1))).astype(int)
+        print(df.tail())
+        
         
 
 
