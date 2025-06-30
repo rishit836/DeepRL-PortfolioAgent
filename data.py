@@ -3,6 +3,7 @@ import os
 import sys
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def calculate_SMA(data: pd.DataFrame, window :int =14)-> pd.Series:
@@ -67,7 +68,9 @@ def data_gen(ticker):
 
     df['MACD_Bullish_Crossover'] = ((df['MACD'] > df['MACD_Signal']) & (df['MACD'].shift(1) <= df['MACD_Signal'].shift(1))).astype(int)
     df['MACD_Bearish_Crossover'] = ((df['MACD'] < df['MACD_Signal']) & (df['MACD'].shift(1) >= df['MACD_Signal'].shift(1))).astype(int)
-    print(df.tail())
+    
+    return df
+
     
         
 
@@ -80,4 +83,7 @@ if __name__ == "__main__":
         ticker = sys.argv[1]
     except:
         ticker = "NVDA"
-    data_gen(ticker)
+    df = data_gen(ticker)
+    plt.boxplot(df['Close'])
+    plt.show()
+    print(df.tail())
