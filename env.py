@@ -6,6 +6,7 @@ class StockMarketEnv:
         self.df = df.reset_index(drop=True)
         self.initial_cash = initial_cash
         self.window_size = window_size
+        self.investment = 0
         self.reset()
         self.verbose = verbose
         
@@ -14,6 +15,8 @@ class StockMarketEnv:
         self.current_step = self.window_size
         self.cash = self.initial_cash
         self.shares_held = 0
+        self.investment = 0
+        self.prev_cash = self.initial_cash
         self.total_value = self.cash
         return self._get_state()
     
@@ -41,7 +44,6 @@ class StockMarketEnv:
         # create a padding incase we dont have enough histroy
         start = self.current_step - self.window_size
         end = self.current_step
-        
 
 
 
@@ -56,7 +58,9 @@ class StockMarketEnv:
             row['MACD_Bullish_Crossover'],
             row['MACD_Bearish_Crossover'],
             self.cash,
-            self.shares_held]
+            self.shares_held,
+            self.investment,
+            self.total_value]
             sequence.append(features)
         return np.array(sequence,dtype=np.float32)
         
@@ -87,33 +91,62 @@ class StockMarketEnv:
 
     def step_sequence(self,action):
         price = self.df.loc[self.current_step,'Close']
+
+        self.prev_cash = self.cash
         self.prev_total_value = self.total_value
+        self.prev_investment= self.investment
+
         if action == 0  and self.cash>=price:
             self.shares_held+=1
             self.cash-= price
+            self.investment+= price
 
         elif action == 1 and self.shares_held>0:
             self.shares_held -= 1
             self.cash += price
+            self.investment-= price
 
-        elif action == 1 and self.shares_held<=0:
-            self.reward = -1
+
+        # elif action == 1 and self.shares_held<=0:
+        #     self.reward = -1e-2
+        #     self.current_step+=1
+        #     done = self.current_step>= len(self.df) - 1
+
+        #     return self._get_state_sequence(),self.reward, done
+
         self.current_step +=1
 
 
 
         done = self.current_step>= len(self.df) - 1
 
-        self.total_value = self.cash + self.shares_held*price
-        if self.total_value > self.prev_total_value:
+        self.total_value = self.cash + self.investment
+        self.investment_change = self.prev_investment-self.investment
+        
+        
+        if ((self.cash- self.prev_cash)/self.cash) >0:
             self.reward = 1
-            if self.verbose:
-                print("Agent made a profit")
+            self.prev_cash = self.cash # setting a new milestone for the agent to pass 
 
-        elif self.total_value < self.prev_total_value:
+            # if self.verbose:
+            print("-"*5)
+            print("agent made a profit of $",(self.cash- self.initial_cash))
+            print("-"*5)
+        elif ((self.cash - self.prev_cash)/self.cash) <0:
+            self.prev_cash  = self.cash
             self.reward = -1
         else:
             self.reward = 0
+
+        # so the agent doesnt learn to just hold onto the cash it has and not take any action
+        if not done and self.current_step > 150 and self.cash == self.initial_cash:
+            print("Agent is not taking any action thus punishing the agent")
+            self.reward = -1
+        
+
+
+
+            
         if self.verbose:
             print("-"*5)
             print(f"Step: {self.current_step}, Action: {action}, Reward: {self.reward}, Total Value: {self.total_value}")
@@ -121,8 +154,12 @@ class StockMarketEnv:
 
         if done :
             print("-"*5)
-            print("Agent made $", self.total_value - self.initial_cash)
+            print(f"agent owns right now {self.cash}")
+            print("Agent made $", self.cash -self.initial_cash)
             print("-"*5)
+
+
+
 
         return self._get_state_sequence(),self.reward, done
 

@@ -4,6 +4,7 @@ import sys
 if __name__ == "__main__":
     try: 
         ticker = sys.argv[1]
+        
     except:
         ticker = "NVDA"
     train(ticker,num_episodes=100,save_=True)

@@ -10,7 +10,7 @@ import os
 
 def train(ticker,num_episodes:int=600,save_:bool=False):
     ticker = ticker
-    df = data_gen(ticker,True)
+    df = data_gen(ticker)
     df.dropna(inplace=True)
     env = StockMarketEnv(df)
     n_features = env._get_state_sequence().shape[1] # getting number of features dynamically
@@ -26,9 +26,17 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
     epsilon = 1
     epsilon_min = .01
     epsilon_decay = .999
-    prob_ = 7e-1
     print("Starting Training")
+    actionmap = {0: "buy",1:"sell",2:"hold"}
+
     for episode in range(num_episodes):
+
+        
+        if random.randint(0,3) == 1:
+            prob_ = 2e-1
+        else:
+            prob_ = 1e-2
+
         state = env.reset()
         state = env._get_state_sequence()
         state = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device) # converting np array to 
@@ -36,16 +44,19 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
 
         done = False
         print("-"*5,end="")
-        print(f"Episode {episode+1}/{num_episodes}",end="")
-        print("-"*5)
+        print(f"Episode {episode+1}/{num_episodes}","-"*5)
+        print("prob set for this is:",prob_)
         epoch = 0
         while not done:
 
             epoch += 1
-            if random.random() < prob_:
+            if random.random() < prob_: 
+                # decaying the prob function
+                prob_ -= 5e-2
                 action = random.randint(0,2)
-                # decay
-                prob_ -= 1e-3
+                # 0: buy, 1: sell, 2:hold
+
+                print("Exploring: Choosing a random Move:", actionmap[action])
             else:
                 with torch.no_grad():
                     q_values = agent(state)
@@ -83,9 +94,9 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
             if epoch%10 == 0:
                 print("Day",epoch)
                 print("Agent Owns",end=" ")
-                print(env.total_value)
+                print(env.cash)
 
-        if save_:
+        if save_ and (env.cash - env.initial_cash)>0:
             print("Saving At Episode",episode)
             if not os.path.exists("models/"):
                 os.mkdir("models/")
