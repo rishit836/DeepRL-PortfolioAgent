@@ -8,7 +8,7 @@ import random
 import torch.nn.functional as F
 import os
 
-def train(ticker,num_episodes:int=600):
+def train(ticker,num_episodes:int=600,save_:bool=False):
     ticker = ticker
     df = data_gen(ticker,True)
     df.dropna(inplace=True)
@@ -35,14 +35,13 @@ def train(ticker,num_episodes:int=600):
         total_reward = 0
 
         done = False
-        print("\n"*3)
-
         print("-"*5,end="")
         print(f"Episode {episode+1}/{num_episodes}",end="")
         print("-"*5)
+        epoch = 0
         while not done:
 
-
+            epoch += 1
             if random.random() < prob_:
                 action = random.randint(0,2)
                 # decay
@@ -81,6 +80,16 @@ def train(ticker,num_episodes:int=600):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+            if epoch%10 == 0:
+                print("Day",epoch)
+                print("Agent Owns",end=" ")
+                print(env.total_value)
+
+        if save_:
+            print("Saving At Episode",episode)
+            if not os.path.exists("models/"):
+                os.mkdir("models/")
+            torch.save(agent.state_dict(),"models/lstm_model_"+str(ticker)+".pth")
 
         epsilon = max(epsilon * epsilon_decay, epsilon_min)
 

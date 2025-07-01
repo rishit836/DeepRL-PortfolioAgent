@@ -2,11 +2,12 @@ import numpy as np
 import pandas as pd
 
 class StockMarketEnv:
-    def __init__(self,df:pd.DataFrame, initial_cash:float=10000,window_size:int = 14):
+    def __init__(self,df:pd.DataFrame, initial_cash:float=10000,window_size:int = 14,verbose:bool=False):
         self.df = df.reset_index(drop=True)
         self.initial_cash = initial_cash
         self.window_size = window_size
         self.reset()
+        self.verbose = verbose
         
 
     def reset(self):
@@ -106,16 +107,23 @@ class StockMarketEnv:
         self.total_value = self.cash + self.shares_held*price
         if self.total_value > self.prev_total_value:
             self.reward = 1
-            print("Agent made a profit")
+            if self.verbose:
+                print("Agent made a profit")
 
         elif self.total_value < self.prev_total_value:
             self.reward = -1
         else:
             self.reward = 0
+        if self.verbose:
+            print("-"*5)
+            print(f"Step: {self.current_step}, Action: {action}, Reward: {self.reward}, Total Value: {self.total_value}")
+            print("-"*5)
 
-        print("-"*5)
-        print(f"Step: {self.current_step}, Action: {action}, Reward: {self.reward}, Total Value: {self.total_value}")
-        print("-"*5)
+        if done :
+            print("-"*5)
+            print("Agent made $", self.total_value - self.initial_cash)
+            print("-"*5)
+
         return self._get_state_sequence(),self.reward, done
 
 

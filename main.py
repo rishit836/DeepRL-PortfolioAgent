@@ -6,4 +6,4 @@ if __name__ == "__main__":
         ticker = sys.argv[1]
     except:
         ticker = "NVDA"
-    train(ticker)
+    train(ticker,num_episodes=100,save_=True)
