@@ -40,6 +40,8 @@ class StockMarketEnv:
         # create a padding incase we dont have enough histroy
         start = self.current_step - self.window_size
         end = self.current_step
+        
+
 
 
         sequence = []
@@ -71,6 +73,7 @@ class StockMarketEnv:
         elif action == 1 and self.shares_held>0:
             self.shares_held -= 1
             self.cash += price
+            
         self.current_step +=1
 
         done = self.current_step>= len(self.df) - 1
@@ -83,7 +86,7 @@ class StockMarketEnv:
 
     def step_sequence(self,action):
         price = self.df.loc[self.current_step,'Close']
-        prev_total_value = self.cash + self.shares_held * price
+        self.prev_total_value = self.total_value
         if action == 0  and self.cash>=price:
             self.shares_held+=1
             self.cash-= price
@@ -91,15 +94,29 @@ class StockMarketEnv:
         elif action == 1 and self.shares_held>0:
             self.shares_held -= 1
             self.cash += price
+
+        elif action == 1 and self.shares_held<=0:
+            self.reward = -1
         self.current_step +=1
+
+
 
         done = self.current_step>= len(self.df) - 1
 
         self.total_value = self.cash + self.shares_held*price
-        reward = self.total_value - prev_total_value # so the model instead of maximazing net worth and portfolio learns to maximise short term gains
-        reward -= 0.01 # transaction fees type shit
+        if self.total_value > self.prev_total_value:
+            self.reward = 1
+            print("Agent made a profit")
 
-        return self._get_state_sequence(),reward, done
+        elif self.total_value < self.prev_total_value:
+            self.reward = -1
+        else:
+            self.reward = 0
+
+        print("-"*5)
+        print(f"Step: {self.current_step}, Action: {action}, Reward: {self.reward}, Total Value: {self.total_value}")
+        print("-"*5)
+        return self._get_state_sequence(),self.reward, done
 
 
 

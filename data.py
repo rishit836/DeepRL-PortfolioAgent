@@ -36,7 +36,7 @@ def calculate_MACD(data:pd.DataFrame):
 
 
 
-def data_gen(ticker):
+def data_gen(ticker,verbose:bool=False):
     if not os.path.exists(ticker+"_data.csv"):
         t = yf.Ticker(ticker)
         data = t.history(period="1y")
@@ -46,10 +46,15 @@ def data_gen(ticker):
         df['date'] = pd.to_datetime(df['date'])
         df['date'] = df['date'].dt.strftime('%Y-%m-%d')
         df.to_csv(ticker+"_data.csv",index=False)
+        if verbose:
+            print("data downloaded")
     else:
         df = pd.read_csv(ticker+"_data.csv")
+        if verbose:
+            print("data exists.")
 
-        
+    if verbose:
+        print("generating Indicators..")
     df['SMA_14'] = calculate_SMA(df,14)
     df['EMA_14'] = calculate_ema(df,14)
     df['RSI_14'] = calculate_rsi(df,14)
@@ -69,7 +74,9 @@ def data_gen(ticker):
     df['MACD_Bullish_Crossover'] = ((df['MACD'] > df['MACD_Signal']) & (df['MACD'].shift(1) <= df['MACD_Signal'].shift(1))).astype(int)
     df['MACD_Bearish_Crossover'] = ((df['MACD'] < df['MACD_Signal']) & (df['MACD'].shift(1) >= df['MACD_Signal'].shift(1))).astype(int)
     
-    return df
+    if verbose:
+        print("data is done")
+    return df[['Open', 'High', 'Low', 'Close', 'SMA_14', 'EMA_14', 'RSI_14', 'MACD', 'MACD_Signal','MACD_Hist', 'MACD_Bullish_Crossover', 'MACD_Bearish_Crossover']]
 
     
         
@@ -86,4 +93,4 @@ if __name__ == "__main__":
     df = data_gen(ticker)
     plt.boxplot(df['Close'])
     plt.show()
-    print(df.tail())
+    print(df.columns)
