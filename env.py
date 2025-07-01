@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
 
+
+
+
+
 class StockMarketEnv:
     def __init__(self,df:pd.DataFrame, initial_cash:float=10000,window_size:int = 14,verbose:bool=False):
         self.df = df.reset_index(drop=True)
@@ -55,8 +59,8 @@ class StockMarketEnv:
             row['MACD'],
             row['MACD_Signal'],
             row['MACD_Hist'],
-            row['MACD_Bullish_Crossover'],
-            row['MACD_Bearish_Crossover'],
+            # row['MACD_Bullish_Crossover'],
+            # row['MACD_Bearish_Crossover'],
             self.cash,
             self.shares_held,
             self.investment,
@@ -107,13 +111,13 @@ class StockMarketEnv:
             self.investment-= price
 
 
-        # elif action == 1 and self.shares_held<=0:
-        #     self.reward = -1e-2
-        #     self.current_step+=1
-        #     done = self.current_step>= len(self.df) - 1
+        elif action == 1 and self.shares_held<=0:
+            self.reward  = -2
+            done = self.current_step>= len(self.df) - 1
 
-        #     return self._get_state_sequence(),self.reward, done
+            return self._get_state_sequence(),self.reward, done
 
+            
         self.current_step +=1
 
 
@@ -125,27 +129,22 @@ class StockMarketEnv:
         
         
         if ((self.cash- self.prev_cash)/self.cash) >0:
-            self.reward = 1
+            self.reward = 5
             self.prev_cash = self.cash # setting a new milestone for the agent to pass 
 
             # if self.verbose:
-            print("-"*5)
+            print("-"*10)
             print("agent made a profit of $",(self.cash- self.initial_cash))
-            print("-"*5)
-        elif ((self.cash - self.prev_cash)/self.cash) <0:
+            print("-"*10)
+        elif ((self.cash - self.prev_cash)/self.cash) <0  and action != 0:
             self.prev_cash  = self.cash
             self.reward = -1
         else:
             self.reward = 0
 
         # so the agent doesnt learn to just hold onto the cash it has and not take any action
-        if not done and self.current_step > 150 and self.cash == self.initial_cash:
-            print("Agent is not taking any action thus punishing the agent")
-            self.reward = -1
-        
-
-
-
+        if not done and self.current_step > 90 and self.cash == self.initial_cash:
+            self.reward = -5
             
         if self.verbose:
             print("-"*5)

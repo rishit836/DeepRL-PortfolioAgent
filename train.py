@@ -30,12 +30,15 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
     actionmap = {0: "buy",1:"sell",2:"hold"}
 
     for episode in range(num_episodes):
-
+        if episode < 30:
         
-        if random.randint(0,3) == 1:
-            prob_ = 2e-1
+            if random.randint(0,3) == 1:
+                prob_ = 2e-1
+            else:
+                prob_ = 1e-2
+
         else:
-            prob_ = 1e-2
+            prob_ = 0
 
         state = env.reset()
         state = env._get_state_sequence()
@@ -53,7 +56,10 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
             if random.random() < prob_: 
                 # decaying the prob function
                 prob_ -= 5e-2
+                
                 action = random.randint(0,2)
+                if action == 1 and env.shares_held == 0:
+                    action = 0
                 # 0: buy, 1: sell, 2:hold
 
                 print("Exploring: Choosing a random Move:", actionmap[action])
@@ -70,7 +76,8 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
 
             state = next_state_tensor
             total_reward += reward
-
+            
+            #check if the memory as enough data to be used as a sample
             if len(memory) >batch_size:
                 batch = memory.sample(batch_size)
                 batch_state, batch_action,batch_next_state, batch_reward  = zip(*batch)
@@ -102,7 +109,7 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
                 os.mkdir("models/")
             torch.save(agent.state_dict(),"models/lstm_model_"+str(ticker)+".pth")
 
-        epsilon = max(epsilon * epsilon_decay, epsilon_min)
+        
 
         
 
@@ -110,7 +117,7 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
 
     if not os.path.exists("models/"):
         os.mkdir("models/")
-    torch.save(agent.state_dict(),"models/lstm_model_"+str(ticker)+".pth")
+    torch.save(agent.state_dict(),"models/exp_lstm_model_"+str(ticker)+".pth")
     print("\n"*5)
     print("-"*10)
     print("Model Trained And Saved Succesfully")
