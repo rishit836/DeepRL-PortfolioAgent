@@ -60,7 +60,7 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False):
                 # decaying the prob function
                 prob_ -= 5e-2
                 
-                action = random.randint(0,2)
+                action = random.randint(0,1)
                 if action == 1 and env.shares_held == 0:
                     action = 0
                 # 0: buy, 1: sell, 2:hold
@@ -104,7 +104,7 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False):
             
             if epoch%10 == 0:
                 print(Back.WHITE,Fore.BLACK,"Day",epoch,Style.RESET_ALL)
-                if env.cash >0:
+                if (env.cash-env.initial_cash) >=0:
                     print(Fore.GREEN,f"Agent Owns {env.cash}")
                 else:
                     print(Fore.RED,f"Agent Owns {env.cash}")
@@ -119,7 +119,7 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False):
 
             '''
         if save_ and (env.cash - env.initial_cash)>0:
-            print(Fore.GREEN, Back.White,"Saving At Episode",episode,Style.RESET_ALL)
+            print(Fore.GREEN, Back.WHITE,"Saving At Episode",episode,Style.RESET_ALL)
             if not os.path.exists("models/"):
                 os.mkdir("models/")
             torch.save(agent.state_dict(),"models/lstm_model_"+str(ticker)+".pth")

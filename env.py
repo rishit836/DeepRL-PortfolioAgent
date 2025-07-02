@@ -141,17 +141,28 @@ class StockMarketEnv:
         elif ((self.cash - self.prev_cash)/self.cash) <0  and action != 0:
             self.prev_cash  = self.cash
             self.reward = -1
+        # making so that the agent learns to stay profitable
+        elif action == 2 and self.cash > self.initial_cash:
+            self.reward = 2
         else:
-            self.reward = 0
+            if action != 0:
+                self.reward = -.1
+            else:
+                self.reward = 0
+
 
         # so the agent doesnt learn to just hold onto the cash it has and not take any action
         if not done and self.current_step > 90 and self.cash == self.initial_cash:
             self.reward = -5
             
-        if self.verbose:
-            print("-"*5)
-            print(Fore.BLUE,f"Step: {self.current_step}, Action: {action}, Reward: {self.reward}, Total Value: {self.total_value}",Style.RESET_ALL)
-            print("-"*5)
+        # if self.verbose:
+        #     print("-"*7)
+        #     if self.reward > 0:
+        #         print(Fore.BLUE,f"Step: {self.current_step}, Action: {action},",Fore.LIGHTGREEN_EX,Back.WHITE,f" Reward: {self.reward}",Style.RESET_ALL)
+        #     else:
+        #         print(Fore.BLUE,f"Step: {self.current_step}, Action: {action},",Fore.RED,Back.WHITE,f" Reward: {self.reward}, ",Style.RESET_ALL)
+
+        #     print("-"*7)
         if self.verbose:
             if done :
                 print("-"*5)
