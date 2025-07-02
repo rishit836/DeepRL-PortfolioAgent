@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import os
 from colorama import Fore, Back, Style
 
-def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False):
+def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explore:bool=True):
     ticker = ticker
     df = data_gen(ticker)
     df.dropna(inplace=True)
@@ -32,13 +32,16 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False):
     actionmap = {0: "buy",1:"sell",2:"hold"}
 
     for episode in range(num_episodes):
-        if episode < 30:
-        
-            if random.randint(0,3) == 1:
-                prob_ = 2e-1
-            else:
-                prob_ = 1e-2
+        if explore:
+            if episode < round(num_episodes*32,0):
+            
+                if random.randint(0,3) == 1:
+                    prob_ = 2e-1
+                else:
+                    prob_ = 1e-2
 
+            else:
+                prob_ = 0
         else:
             prob_ = 0
 
