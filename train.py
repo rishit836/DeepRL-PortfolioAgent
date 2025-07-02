@@ -8,8 +8,14 @@ import random
 import torch.nn.functional as F
 import os
 from colorama import Fore, Back, Style
+from collections import deque
+
+
 
 def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explore:bool=True):
+    max_profit = 0
+    current_profit = 0
+
     ticker = ticker
     df = data_gen(ticker)
     df.dropna(inplace=True)
@@ -122,10 +128,16 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explor
 
             '''
         if save_ and (env.cash - env.initial_cash)>0:
-            print(Fore.GREEN, Back.WHITE,"Saving At Episode",episode,Style.RESET_ALL)
-            if not os.path.exists("models/"):
-                os.mkdir("models/")
-            torch.save(agent.state_dict(),"models/lstm_model_"+str(ticker)+".pth")
+            if (env.cash-env.initial_cash)>max_profit:
+                max_profit = env.cash-env.initial_cash
+
+                print(Fore.GREEN, Back.WHITE,"Saving At Episode",episode,Style.RESET_ALL)
+                if not os.path.exists("models/"):
+                    os.mkdir("models/")
+                torch.save(agent.state_dict(),"models/lstm_model_"+str(ticker)+".pth")
+            else:
+                print(Fore.GREEN, Back.WHITE,"Although Model is profitable but not More than models before",episode,Style.RESET_ALL)
+
 
         
 
