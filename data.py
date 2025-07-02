@@ -37,7 +37,7 @@ def calculate_MACD(data:pd.DataFrame):
 
 
 def data_gen(ticker,verbose:bool=False):
-    if not os.path.exists(ticker+"_data.csv"):
+    if not os.path.exists("data/"+str(ticker)+"_data.csv"):
         t = yf.Ticker(ticker)
         data = t.history(period="1y")
         df = pd.DataFrame(data)
@@ -45,11 +45,14 @@ def data_gen(ticker,verbose:bool=False):
         df.reset_index(inplace=True,drop=True)
         df['date'] = pd.to_datetime(df['date'])
         df['date'] = df['date'].dt.strftime('%Y-%m-%d')
-        df.to_csv(ticker+"_data.csv",index=False)
+        if not os.path.exists("data"):
+            os.mkdir("data")
+        df.to_csv("data/"+str(ticker)+"_data.csv",index=False)
+        
         if verbose:
             print("data downloaded")
     else:
-        df = pd.read_csv(ticker+"_data.csv")
+        df = pd.read_csv("data/"+str(ticker)+"_data.csv")
         if verbose:
             print("data exists.")
 

@@ -4,3 +4,4 @@ cartpole.py
 models
 .vscode
 __pycache__
+data
