@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
-
-
+from colorama import just_fix_windows_console,init
+from colorama import Fore, Back, Style
+just_fix_windows_console()
+init()
 
 
 
@@ -132,10 +134,10 @@ class StockMarketEnv:
             self.reward = 5
             self.prev_cash = self.cash # setting a new milestone for the agent to pass 
 
-            # if self.verbose:
-            print("-"*10)
-            print("agent made a profit of $",(self.cash- self.initial_cash))
-            print("-"*10)
+            if self.verbose:
+                print("-"*10)
+                print(Fore.LIGHTGREEN_EX,"agent made a profit of $",(self.cash- self.initial_cash),Style.RESET_ALL)
+                print("-"*10)
         elif ((self.cash - self.prev_cash)/self.cash) <0  and action != 0:
             self.prev_cash  = self.cash
             self.reward = -1
@@ -148,14 +150,21 @@ class StockMarketEnv:
             
         if self.verbose:
             print("-"*5)
-            print(f"Step: {self.current_step}, Action: {action}, Reward: {self.reward}, Total Value: {self.total_value}")
+            print(Fore.BLUE,f"Step: {self.current_step}, Action: {action}, Reward: {self.reward}, Total Value: {self.total_value}",Style.RESET_ALL)
             print("-"*5)
+        if self.verbose:
+            if done :
+                print("-"*5)
+                if self.cash>0:
+                    print(Fore.GREEN,f"agent owns right now {self.cash}",Style.RESET_ALL)
+                else:
+                    print(Fore.RED,f"agent owns right now {self.cash}",Style.RESET_ALL)
+                if (self.cash -self.initial_cash)>0:
+                    print(Fore.GREEN,"Agent made $", self.cash -self.initial_cash,Style.RESET_ALL)
+                else:
+                    print(Fore.RED,"Agent made $", self.cash -self.initial_cash,Style.RESET_ALL)
 
-        if done :
-            print("-"*5)
-            print(f"agent owns right now {self.cash}")
-            print("Agent made $", self.cash -self.initial_cash)
-            print("-"*5)
+                print("-"*5)
 
 
 

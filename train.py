@@ -7,12 +7,13 @@ from env import StockMarketEnv
 import random
 import torch.nn.functional as F
 import os
+from colorama import Fore, Back, Style
 
-def train(ticker,num_episodes:int=600,save_:bool=False):
+def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False):
     ticker = ticker
     df = data_gen(ticker)
     df.dropna(inplace=True)
-    env = StockMarketEnv(df)
+    env = StockMarketEnv(df,verbose=verbose)
     n_features = env._get_state_sequence().shape[1] # getting number of features dynamically
     n_actions = 3 # buy/sell/hold
     memory = replayMemory(10000)
@@ -26,7 +27,8 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
     epsilon = 1
     epsilon_min = .01
     epsilon_decay = .999
-    print("Starting Training")
+    
+    print(Back.GREEN,"Starting Training",Style.RESET_ALL)
     actionmap = {0: "buy",1:"sell",2:"hold"}
 
     for episode in range(num_episodes):
@@ -48,7 +50,8 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
         done = False
         print("-"*5,end="")
         print(f"Episode {episode+1}/{num_episodes}","-"*5)
-        print("prob set for this is:",prob_)
+        if verbose:
+            print(Back.YELLOW,"prob set for this is:",prob_, Style.RESET_ALL)
         epoch = 0
         while not done:
 
@@ -61,8 +64,8 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
                 if action == 1 and env.shares_held == 0:
                     action = 0
                 # 0: buy, 1: sell, 2:hold
-
-                print("Exploring: Choosing a random Move:", actionmap[action])
+                if verbose:
+                    print(Fore.WHITE, Back.YELLOW,"Exploring: Choosing a random Move:", actionmap[action],Style.RESET_ALL)
             else:
                 with torch.no_grad():
                     q_values = agent(state)
@@ -98,13 +101,25 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+            
             if epoch%10 == 0:
-                print("Day",epoch)
-                print("Agent Owns",end=" ")
-                print(env.cash)
+                print(Back.WHITE,Fore.BLACK,"Day",epoch,Style.RESET_ALL)
+                if env.cash >0:
+                    print(Fore.GREEN,f"Agent Owns {env.cash}")
+                else:
+                    print(Fore.RED,f"Agent Owns {env.cash}")
 
+            '''
+            if verbose and epoch%10 != 0:
+                print(Back.WHITE,Fore.BLACK,"Day",epoch,Style.RESET_ALL)
+                if env.cash >0:
+                    print(Fore.GREEN,f"Agent Owns {env.cash}")
+                else:
+                    print(Fore.RED,f"Agent Owns {env.cash}")
+
+            '''
         if save_ and (env.cash - env.initial_cash)>0:
-            print("Saving At Episode",episode)
+            print(Fore.GREEN, Back.White,"Saving At Episode",episode,Style.RESET_ALL)
             if not os.path.exists("models/"):
                 os.mkdir("models/")
             torch.save(agent.state_dict(),"models/lstm_model_"+str(ticker)+".pth")
@@ -119,9 +134,10 @@ def train(ticker,num_episodes:int=600,save_:bool=False):
         os.mkdir("models/")
     torch.save(agent.state_dict(),"models/exp_lstm_model_"+str(ticker)+".pth")
     print("\n"*5)
-    print("-"*10)
-    print("Model Trained And Saved Succesfully")
-    print("-"*10)
+    print(Fore.BLACK, Back.BLACK, "-"*10,Style.RESET_ALL)
+    print(Fore.GREEN, Back.White,"Model Trained And Saved Succesfully",Style.RESET_ALL)
+    print(Fore.BLACK, Back.BLACK, "-"*10,Style.RESET_ALL)
+
 
 
 if __name__ == "__main__":
