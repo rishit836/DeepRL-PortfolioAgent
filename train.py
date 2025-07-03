@@ -12,17 +12,28 @@ from collections import deque
 
 
 
-def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explore:bool=True):
+
+def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explore:bool=True,normalize:bool=False):
     max_profit = 0
     current_profit = 0
 
     ticker = ticker
-    df = data_gen(ticker)
+    df = data_gen(ticker,verbose=verbose,scale=normalize)
     df.dropna(inplace=True)
-    env = StockMarketEnv(df,verbose=verbose)
+    if normalize:
+        env = StockMarketEnv(df,verbose=verbose,initial_cash=100)
+    else:
+        env = StockMarketEnv(df,verbose=verbose)
     n_features = env._get_state_sequence().shape[1] # getting number of features dynamically
     n_actions = 3 # buy/sell/hold
+
+    '''memory for the model to learn from past experiance'''
     memory = replayMemory(10000)
+
+    
+
+
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     agent = LSTMtradingAgent(n_actions=n_actions ,n_features=n_features,n_layers=12).to(device)
@@ -30,9 +41,6 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explor
 
     batch_size = 64
     gamma = .99
-    epsilon = 1
-    epsilon_min = .01
-    epsilon_decay = .999
     
     print(Back.GREEN,"Starting Training",Style.RESET_ALL)
     actionmap = {0: "buy",1:"sell",2:"hold"}
@@ -42,9 +50,9 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explor
             if episode < round(num_episodes*32,0):
             
                 if random.randint(0,3) == 1:
-                    prob_ = 2e-1
+                    prob_ = 3e-1
                 else:
-                    prob_ = 1e-2
+                    prob_ = 2e-1
 
             else:
                 prob_ = 0
@@ -69,7 +77,7 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explor
                 # decaying the prob function
                 prob_ -= 5e-2
                 
-                action = random.randint(0,1)
+                action = random.randint(0,2)
                 if action == 1 and env.shares_held == 0:
                     action = 0
                 # 0: buy, 1: sell, 2:hold
@@ -84,7 +92,10 @@ def train(ticker,num_episodes:int=600,save_:bool=False,verbose:bool=False,explor
             next_state,reward,done = env.step_sequence(action)
             next_state_tensor = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(device)
 
+
             memory.push(state,torch.tensor([[action]],dtype=torch.long, device=device),next_state_tensor,torch.tensor([reward], dtype=torch.float32, device=device))
+
+
 
             state = next_state_tensor
             total_reward += reward

@@ -4,7 +4,8 @@ import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from sklearn.preprocessing import MinMaxScaler
+import pickle
 
 def calculate_SMA(data: pd.DataFrame, window :int =14)-> pd.Series:
     return data['Close'].rolling(window).mean()
@@ -36,7 +37,7 @@ def calculate_MACD(data:pd.DataFrame):
 
 
 
-def data_gen(ticker,verbose:bool=False):
+def data_gen(ticker,verbose:bool=False,scale:bool=True):
     if not os.path.exists("data/"+str(ticker)+"_data.csv"):
         t = yf.Ticker(ticker)
         data = t.history(period="1y")
@@ -55,9 +56,21 @@ def data_gen(ticker,verbose:bool=False):
         df = pd.read_csv("data/"+str(ticker)+"_data.csv")
         if verbose:
             print("data exists.")
+    if verbose:
+        print("Normalizing the data")
+    if scale:
+        scaler = MinMaxScaler()
+        df['Close'] = scaler.fit_transform(df[['Close']])
+        if not os.path.exists('scalers'):
+            os.mkdir('scalers')
+        pickle.dump(scaler, open("scalers/"+str(ticker)+"_scaler.dat", "wb"))
+    else:
+        if verbose:
+            print("normalization set to False.")
 
     if verbose:
-        print("generating Indicators..")
+        print("Generating Tickers")
+    
     df['SMA_14'] = calculate_SMA(df,14)
     df['EMA_14'] = calculate_ema(df,14)
     df['RSI_14'] = calculate_rsi(df,14)
@@ -94,6 +107,6 @@ if __name__ == "__main__":
     except:
         ticker = "NVDA"
     df = data_gen(ticker)
-    plt.boxplot(df['Close'])
-    plt.show()
-    print(df.columns)
+    
+    df.dropna(inplace=True)
+    print(df.head())

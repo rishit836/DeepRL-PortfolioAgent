@@ -24,6 +24,7 @@ class StockMarketEnv:
         self.investment = 0
         self.prev_cash = self.initial_cash
         self.total_value = self.cash
+        self.prev_investment = 0
         return self._get_state()
     
     '''
@@ -50,23 +51,23 @@ class StockMarketEnv:
         # create a padding incase we dont have enough histroy
         start = self.current_step - self.window_size
         end = self.current_step
-
-
-
         sequence = []
         history = self.df.iloc[start:end]
         for _,row in history.iterrows():
             features = [row['Close'],
             row['RSI_14'],
+            row['SMA_14'],
+            row['EMA_14'],
             row['MACD'],
-            row['MACD_Signal'],
-            row['MACD_Hist'],
+            # row['MACD_Signal'],
+            # row['MACD_Hist'],
             # row['MACD_Bullish_Crossover'],
             # row['MACD_Bearish_Crossover'],
-            self.cash,
-            self.shares_held,
-            self.investment,
-            self.total_value]
+            self.cash, # so the agent knows what is it doing
+            self.shares_held, # so the agent knows the current status of how many shares it holds
+            self.investment, # so the agent knows what ist investment is worth at the moment
+            self.prev_investment # so the agent knows that it has made a loss  or profit
+            ]
             sequence.append(features)
         return np.array(sequence,dtype=np.float32)
         
@@ -102,22 +103,24 @@ class StockMarketEnv:
         self.prev_total_value = self.total_value
         self.prev_investment= self.investment
 
+
+        self.investment = self.shares_held * price
         if action == 0  and self.cash>=price:
             self.shares_held+=1
             self.cash-= price
-            self.investment+= price
+            # self.investment+= price
 
         elif action == 1 and self.shares_held>0:
             self.shares_held -= 1
             self.cash += price
-            self.investment-= price
+            # self.investment-= price
 
 
-        elif action == 1 and self.shares_held<=0:
-            self.reward  = -2
-            done = self.current_step>= len(self.df) - 1
+        # elif action == 1 and self.shares_held<=0:
+        #     self.reward  = -2
+        #     done = self.current_step>= len(self.df) - 1
 
-            return self._get_state_sequence(),self.reward, done
+        #     return self._get_state_sequence(),self.reward, done
 
             
         self.current_step +=1
@@ -127,30 +130,39 @@ class StockMarketEnv:
         done = self.current_step>= len(self.df) - 1
 
         self.total_value = self.cash + self.investment
-        self.investment_change = self.prev_investment-self.investment
         
         
-        if ((self.cash- self.prev_cash)/self.cash) >0:
-            self.reward = 5
-            self.prev_cash = self.cash # setting a new milestone for the agent to pass 
+        
+        if ((self.cash- self.prev_cash)/self.cash) >0 and action==1:
+            # if the profits are big
+            if ((self.cash- self.prev_cash)/self.cash) > .2:
+                self.reward = 10
+                self.prev_cash = self.cash # setting a new milestone for the agent to pass 
+            else:
+                self.reward = 5
+                self.prev_cash = self.cash
 
             if self.verbose:
                 print("-"*10)
                 print(Fore.LIGHTGREEN_EX,"agent made a profit of $",(self.cash- self.initial_cash),Style.RESET_ALL)
                 print("-"*10)
+
+
         elif ((self.cash - self.prev_cash)/self.cash) <0  and action != 0:
             self.prev_cash  = self.cash
-            self.reward = -1
+            self.reward = -5
         # making so that the agent learns to stay profitable
-        elif action == 2 and self.cash > self.initial_cash:
-            self.reward = 2
+        
         else:
             if action != 0:
                 self.reward = -.1
             else:
                 self.reward = 0
 
-
+        # so the agent learns to stay profitable
+        if action == 2 and self.cash > self.initial_cash:
+            print(Fore.GREEN, "Model is Profitable",Style.RESET_ALL)
+            self.reward = 10
         # so the agent doesnt learn to just hold onto the cash it has and not take any action
         if not done and self.current_step > 90 and self.cash == self.initial_cash:
             self.reward = -5
@@ -158,9 +170,9 @@ class StockMarketEnv:
         # if self.verbose:
         #     print("-"*7)
         #     if self.reward > 0:
-        #         print(Fore.BLUE,f"Step: {self.current_step}, Action: {action},",Fore.LIGHTGREEN_EX,Back.WHITE,f" Reward: {self.reward}",Style.RESET_ALL)
+        #         print(Fore.BLUE,f"Step: {self.current_step}, Action: {action},",Fore.LIGHTGREEN_EX,f" Reward: {self.reward}",Style.RESET_ALL)
         #     else:
-        #         print(Fore.BLUE,f"Step: {self.current_step}, Action: {action},",Fore.RED,Back.WHITE,f" Reward: {self.reward}, ",Style.RESET_ALL)
+        #         print(Fore.BLUE,f"Step: {self.current_step}, Action: {action},",Fore.RED,f" Reward: {self.reward}",Style.RESET_ALL)
 
         #     print("-"*7)
         if self.verbose:
